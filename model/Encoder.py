@@ -1,7 +1,43 @@
 import torch
 import torch.nn as nn
 
+class MaxPool_3D(nn.Module):
+    def __init__(self, kernel_size, stride, padding):
+        super(MaxPool_3D, self).__init__()
+        assert (len(kernel_size) == 3 and len(stride) == 3)
+        kernel_size2d1 = kernel_size[-2:]
+        stride2d1 = stride[-2:]
+        padding2d1 = padding[-2:]
 
+        kernel_size2d2 = (kernel_size[0], kernel_size[0])
+        stride2d2 = (stride[0], stride[0])
+        padding2d2 = (padding[0], padding[0])
+
+        self.maxpool2d1 = nn.MaxPool2d(kernel_size=kernel_size2d1, stride=stride2d1, padding=padding2d1)
+        self.maxpool2d2 = nn.MaxPool2d(kernel_size=kernel_size2d2, stride=stride2d2, padding=padding2d2)
+
+    def forward(self, x):
+        if x.dim() == 5:
+            x = x.transpose(1, 2)  # (N, C, D, H, W) -> (N, D, C, H, W)
+            B, D, C, H, W = x.shape
+            x = x.view(B * D, C, H, W)  # (N * D, C, H, W)
+            x = self.maxpool2d1(x)
+            _, C, H, W = x.shape
+            x = x.view(B, D, C, H, W)  # (N, D, C, H, W)
+            x = x.transpose(1, 2)  # (N, D, C, H, W) -> (N, C, D, H, W)
+
+            # Apply 2D pooling along D and one of H or W (since kernel_size2d2 aims at depth)
+            x = x.transpose(2, 3)  # (N, C, D, H, W) -> (N, C, H, D, W)
+            B, C, H, D, W = x.shape
+            x = x.view(B * C, H, D, W)  # (N * C, H, D, W)
+            x = self.maxpool2d2(x)
+            H, D, W = x.shape[1:]
+            x = x.view(B, C, H, D, W)  # (N, C, H, D, W)
+            x = x.transpose(2, 3)  # (N, C, H, D, W) -> (N, C, D, H, W)
+        else:
+            x = self.maxpool2d1(x)
+        return x
+    
 class Audio_Block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(Audio_Block, self).__init__()
@@ -85,10 +121,10 @@ class visual_encoder(nn.Module):
         super(visual_encoder, self).__init__()
 
         self.block1 = Visual_Block(1, 32, is_down = True)
-        self.pool1 = nn.MaxPool3d(kernel_size = (1, 3, 3), stride = (1, 2, 2), padding = (0, 1, 1))
+        self.pool1 = MaxPool_3D(kernel_size = (1, 3, 3), stride = (1, 2, 2), padding = (0, 1, 1))
 
         self.block2 = Visual_Block(32, 64)
-        self.pool2 = nn.MaxPool3d(kernel_size = (1, 3, 3), stride = (1, 2, 2), padding = (0, 1, 1))
+        self.pool2 = MaxPool_3D(kernel_size = (1, 3, 3), stride = (1, 2, 2), padding = (0, 1, 1))
         
         self.block3 = Visual_Block(64, 128)
 
@@ -108,7 +144,7 @@ class visual_encoder(nn.Module):
 
         x = x.transpose(1,2)
         B, T, C, W, H = x.shape  
-        x = x.reshape(B*T, C, W, H)
+        x = x.view(B*T, C, W, H)
 
         x = self.maxpool(x)
 
@@ -131,10 +167,10 @@ class audio_encoder(nn.Module):
         super(audio_encoder, self).__init__()
         
         self.block1 = Audio_Block(1, 32)
-        self.pool1 = nn.MaxPool3d(kernel_size = (1, 1, 3), stride = (1, 1, 2), padding = (0, 0, 1))
+        self.pool1 = MaxPool_3D(kernel_size = (1, 1, 3), stride = (1, 1, 2), padding = (0, 0, 1))
 
         self.block2 = Audio_Block(32, 64)
-        self.pool2 = nn.MaxPool3d(kernel_size = (1, 1, 3), stride = (1, 1, 2), padding = (0, 0, 1))
+        self.pool2 = MaxPool_3D(kernel_size = (1, 1, 3), stride = (1, 1, 2), padding = (0, 0, 1))
         
         self.block3 = Audio_Block(64, 128)
 
@@ -151,7 +187,7 @@ class audio_encoder(nn.Module):
         x = self.block3(x)
 
         x = torch.mean(x, dim = 2, keepdim = True)
-        x = x.squeeze(2).transpose(1, 2)
+        x = x.view(x.size(0), x.size(1), -1).transpose(1, 2)  # Replace squeeze with view
         
         return x
 

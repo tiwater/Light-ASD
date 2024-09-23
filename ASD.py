@@ -10,10 +10,11 @@ from model.Model import ASD_Model
 
 class ASD(nn.Module):
     def __init__(self, lr = 0.001, lrDecay = 0.95, **kwargs):
-        super(ASD, self).__init__()        
-        self.model = ASD_Model().cuda()
-        self.lossAV = lossAV().cuda()
-        self.lossV = lossV().cuda()
+        super(ASD, self).__init__()    
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
+        self.model = ASD_Model().to(self.device)
+        self.lossAV = lossAV().to(self.device)
+        self.lossV = lossV().to(self.device)
         self.optim = torch.optim.Adam(self.parameters(), lr = lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optim, step_size = 1, gamma=lrDecay)
         print(time.strftime("%m-%d %H:%M:%S") + " Model para number = %.2f"%(sum(param.numel() for param in self.model.parameters()) / 1000 / 1000))
@@ -86,9 +87,9 @@ class ASD(nn.Module):
 
     def loadParameters(self, path):
         selfState = self.state_dict()
-        loadedState = torch.load(path)
+        loadedState = torch.load(path, map_location=self.device)
         for name, param in loadedState.items():
-            origName = name;
+            origName = name
             if name not in selfState:
                 name = name.replace("module.", "")
                 if name not in selfState:
