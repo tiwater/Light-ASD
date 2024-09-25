@@ -4,6 +4,7 @@ import numpy as np
 import os
 from scipy.io import wavfile
 from rknnlite.api import RKNNLite
+import time
 
 pycropPath = "demo/test/pycrop"
 
@@ -11,7 +12,7 @@ def evaluate_network(files):
 # Initialize RKNN model
   lightAsd = RKNNLite()
   lightAsd.load_rknn('./models/lightASD.rknn')
-  lightAsd.init_runtime()
+  lightAsd.init_runtime(core_mask=RKNNLite.NPU_CORE_ALL)
 
   lossAV = RKNNLite()
   lossAV.load_rknn('./models/lossAV.rknn')
@@ -51,13 +52,32 @@ def evaluate_network(files):
           
           # Transpose visual input to match NHWC format
           inputV = inputV.transpose(0, 2, 3, 1)  # from NCHW to NHWC
+          
+          # Measure the start time
+          start_time = time.time()
+
           out = lightAsd.inference(inputs=[inputA, inputV])[0]
+          # Measure the end time
+          end_time = time.time()
+
+          # Calculate and print the running time
+          running_time = end_time - start_time
+          print(f"Asd inference running time: {running_time:.4f} seconds")
           
           # print(out)
           # print(out.shape)
 
+          # Measure the start time
+          start_time = time.time()
+
           # Get inference for the target image
           score = lossAV.inference(inputs=[out])
+          # Measure the end time
+          end_time = time.time()
+
+          # Calculate and print the running time
+          running_time = end_time - start_time
+          print(f"LossAV inference running time: {running_time:.4f} seconds")
 
           # print(score)
           scores.extend(score)

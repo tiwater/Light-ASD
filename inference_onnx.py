@@ -3,6 +3,7 @@ import onnxruntime as ort
 import numpy as np
 import os
 from scipy.io import wavfile
+import time
 
 pycropPath = "demo/test/pycrop"
 
@@ -47,15 +48,36 @@ def evaluate_network(files):
               'audio': inputA.astype(np.float32),
               'visual': inputV.astype(np.float32)
           }
-
+          
+          # Measure the start time
+          start_time = time.time()
           # Run inference
           out = model.run(None, ort_inputs)[0]
-          
+          # Measure the end time
+          end_time = time.time()
+
+          # Calculate and print the running time
+          running_time = end_time - start_time
+          print(f"Asd inference running time: {running_time:.4f} seconds")
+
+                    
           # print(out)
           # print(out.shape)
           
+
           ort_inputs = {lossAV.get_inputs()[0].name: out}
+
+          # Measure the start time
+          start_time = time.time()
+
           score = lossAV.run(None, ort_inputs)
+
+          # Measure the end time
+          end_time = time.time()
+
+          # Calculate and print the running time
+          running_time = end_time - start_time
+          print(f"LossAV inference running time: {running_time:.4f} seconds")
 
           # print(score)
           scores.extend(score)

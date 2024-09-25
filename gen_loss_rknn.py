@@ -9,7 +9,6 @@ def create_torchscript_model(asd_model_path, save_path):
     # Load pretrained ASD model
     asd_model = ASD()
     asd_model.loadParameters(asd_model_path)
-    asd_model.model.eval()
     asd_model.lossAV.eval()
     score_example = torch.rand([25, 128])
     try:
@@ -44,7 +43,7 @@ def export_onnx_model(script_model_path, onnx_path):
         input_names=["input"],
         output_names=["output"],
         do_constant_folding=True, 
-        opset_version=12,
+        opset_version=19,
         dynamic_axes = dynamic_axes
     )
     print(f"ONNX model saved to {onnx_path}")

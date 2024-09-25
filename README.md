@@ -6,6 +6,107 @@ This repository contains the code and model weights for our [paper](https://open
 > A Light Weight Model for Active Speaker Detection  
 > Junhua Liao, Haihan Duan, Kanghui Feng, Wanbing Zhao, Yanbing Yang, Liangyin Chen
 
+***
+
+## 执行
+
+1. 在开发板上安装 Python 执行环境。注意：
+   - RKNN-Toolkit Ubuntu 20.04 只支持 Python 3.8 和 3.9。
+   - Ubuntu 22.04 支持 Python 3.10 和 3.11。
+
+2. 在开发板上执行以下命令以安装必要的库：
+   ```bash
+   sudo apt-get install libxslt1-dev zlib1g zlib1g-dev libglib2.0-0 libsm6 libgl1-mesa-glx libprotobuf-dev gcc
+   pip install -i https://mirror.baidu.com/pypi/simple opencv_contrib_python
+   ```
+
+3. 获得瑞芯微官方的 RKNN-Toolkit：
+   ```bash
+   git clone https://hub.nuaa.cf/airockchip/rknn-toolkit2.git
+   ```
+
+4. 将 RKNN-Toolkit 安装到开发板上：
+   ```bash
+   cd rknn-toolkit2
+   pip install rknn-toolkit-lite2/packages/rknn_toolkit_lite2-2.0.0b0-cpxx-cpxx-linux_aarch64.whl
+   ```
+   其中的 `cpxx` 需要替换为 Python 的版本号，请在 `rknn-toolkit-lite2/packages` 目录下查找和你的 Python 版本匹配的 `.whl` 文件。例如：
+   ```bash
+   pip install rknn-toolkit-lite2/packages/rknn_toolkit_lite2-2.0.0b0-cp38-cp38-linux_aarch64.whl
+   ```
+
+5. 将本项目拷贝至 RK3588 开发板。
+
+6. 执行：
+   ```bash
+   python inference_onnx.py
+   ```
+   利用 ONNX 模型推理
+
+   或者
+   ```bash
+   python inference_rknn.py
+   ```
+   利用 rknn 模型推理。不过当前 rknn 模型效率不佳，建议采用 onnx 模型。
+
+## 模型转换
+
+1. 如果需要重新生成模型，请执行以下步骤：
+   
+2. 参考 [RKNN-Toolkit2 快速入门指南](https://hub.nuaa.cf/airockchip/rknn-toolkit2/blob/master/doc/01_Rockchip_RV1106_RV1103_Quick_Start_RKNN_SDK_V2.0.0beta0_CN.pdf)，在 PC 端用 Docker 安装 RKNN-Toolkit2 镜像。
+
+3. 启动镜像后，在镜像中执行以下步骤：
+
+4. 利用 `docker cp` 将本项目源码拷贝进容器中。
+
+5.  执行：
+    ```bash
+    python gen_asd_rknn.py
+    ```
+    会依次生成 LightASD 的 pt, onnx, rknn 模型。但默认的 Encoder 实现对 rknn 模型支持不佳，因此目前默认并不生成。
+    
+    如果确实需要生成 rknn 模型，请参考 `model/Model.py` 开始的注释，选择使用 Encoder2D.py 中的实现。并取消注释 gen_asd_rknn.py 中最后一行 rknn 模型生成部分，不然很容易内存溢出崩溃。
+
+    但 Encoder2D.py 目前仅供参考，因为改写了模型，权重尚未重新生成，重新训练之前暂时不具有实用价值。
+
+6.  执行：
+    ```bash
+    python gen_loss_rknn.py
+    ```
+    会依次生成 LossAV 模型 的 pt, onnx, rknn 模型。
+
+## 模型调试及评估
+
+1. 执行：
+    ```bash
+    python evaluate_acc_asd.py
+    ```
+    评估 LightASD onnx 和 rknn 模型的精度差。
+
+2. 执行：
+    ```bash
+    python evaluate_acc_loss.py
+    ```
+    评估 LossAV 模型的 onnx 和 rknn 模型的精度差。
+
+3. 执行：
+    ```bash
+    python evaluate_perf.py
+    ```
+    评估 LightASD 模型的计算性能。
+
+4. 执行：
+    ```bash
+    python evaluate_mem.py
+    ```
+    查看 LightASD 模型的内存占用情况。
+
+5. 执行：
+    ```bash
+    python gen_quantize_data.py
+    python quantize.py
+    ```
+    生成量化数据并执行量化。注意，应根据模型的输入尺寸选择合适的量化数据。量化数据的类型也应该和模型的输入类型一致。此功能目前尚未完善。
 
 ***
 ### Evaluate on AVA-ActiveSpeaker dataset 
