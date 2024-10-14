@@ -1,5 +1,5 @@
 import torch
-from ASD import ASD
+from ASD_2D import ASD
 from rknn.api import RKNN
 
 # Function to create TorchScript model
@@ -155,7 +155,7 @@ def generate_rknn_static_model(onnx_path, rknn_path):
 
 if __name__ == "__main__":
     # Paths
-    asd_model_path = "weight/pretrain_AVA_CVPR.model"
+    asd_model_path = "weight/rknn_v21.model"
 
     # Define the base path for models
     base_model_path = "./models/lightASD"
@@ -167,6 +167,6 @@ if __name__ == "__main__":
     
     # Steps
     create_torchscript_model(asd_model_path, scripted_model_path)
-    export_onnx_static_model(scripted_model_path, onnx_model_path)
+    export_onnx_model(scripted_model_path, onnx_model_path)
     # Uncomment the following line to generate the RKNN model
-    # generate_rknn_static_model(onnx_model_path, rknn_model_path)
+    generate_rknn_model(onnx_model_path, rknn_model_path)

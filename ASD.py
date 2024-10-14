@@ -28,13 +28,13 @@ class ASD(nn.Module):
         for num, (audioFeature, visualFeature, labels) in enumerate(loader, start=1):
             self.zero_grad()
 
-            audioEmbed = self.model.forward_audio_frontend(audioFeature[0].cuda())
-            visualEmbed = self.model.forward_visual_frontend(visualFeature[0].cuda())
+            audioEmbed = self.model.forward_audio_frontend(audioFeature[0].to(self.device))
+            visualEmbed = self.model.forward_visual_frontend(visualFeature[0].to(self.device))
 
             outsAV= self.model.forward_audio_visual_backend(audioEmbed, visualEmbed)  
             outsV = self.model.forward_visual_backend(visualEmbed)
 
-            labels = labels[0].reshape((-1)).cuda() # Loss
+            labels = labels[0].reshape((-1)).to(self.device)   # Loss
             nlossAV, _, _, prec = self.lossAV.forward(outsAV, labels, r)
             nlossV = self.lossV.forward(outsV, labels, r)
             nloss = nlossAV + 0.5 * nlossV
@@ -60,10 +60,10 @@ class ASD(nn.Module):
         predScores = []
         for audioFeature, visualFeature, labels in tqdm.tqdm(loader):
             with torch.no_grad():                
-                audioEmbed  = self.model.forward_audio_frontend(audioFeature[0].cuda())
-                visualEmbed = self.model.forward_visual_frontend(visualFeature[0].cuda())
-                outsAV= self.model.forward_audio_visual_backend(audioEmbed, visualEmbed)  
-                labels = labels[0].reshape((-1)).cuda()             
+                audioEmbed  = self.model.forward_audio_frontend(audioFeature[0].to(self.device))
+                visualEmbed = self.model.forward_visual_frontend(visualFeature[0].to(self.device))
+                outsAV= self.model.forward_audio_visual_backend(audioEmbed, visualEmbed) 
+                labels = labels[0].reshape((-1)).to(self.device)            
                 _, predScore, _, _ = self.lossAV.forward(outsAV, labels)    
                 predScore = predScore[:,1].detach().cpu().numpy()
                 predScores.extend(predScore)

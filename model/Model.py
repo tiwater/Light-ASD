@@ -4,7 +4,7 @@ import torch.nn as nn
 from model.Classifier import BGRU
 from model.Encoder import visual_encoder, audio_encoder
 # If want to run on rk3588 in rknn format, comment out the above line and uncomment the below line
-#from model.Encoder2D import visual_encoder, audio_encoder
+# from model.Encoder2D import visual_encoder, audio_encoder
 
 class ASD_Model(nn.Module):
     def __init__(self):
