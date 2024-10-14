@@ -47,7 +47,8 @@ This repository contains the code and model weights for our [paper](https://open
    ```bash
    python inference_rknn.py
    ```
-   利用 rknn 模型推理。不过当前 rknn 模型效率不佳，建议采用 onnx 模型。
+
+   如果希望采用量化模型，请选择 lightASD_i8.rknn
 
 ## 模型转换
 
@@ -123,6 +124,13 @@ You can train the model on the AVA dataset by using:
 ```
 python train.py --dataPathAVA AVADataPath
 ```
+
+or
+```
+python train_2D.py --dataPathAVA AVADataPath
+```
+which is a customized version to support rknn.
+
 `exps/exps1/score.txt`: output score file, `exps/exp1/model/model_00xx.model`: trained model, `exps/exps1/val_res.csv`: prediction for val set.
 
 #### Testing
