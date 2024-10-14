@@ -3,7 +3,8 @@ import time, os, torch, argparse, warnings, glob
 from dataLoader import train_loader, val_loader
 from utils.tools import *
 from ASD import ASD
-from ASD_2D_Scaled import ASD as ASD_2D
+# from ASD_2D_Scaled import ASD as ASD_2D
+from ASD_2D_full import ASD as ASD_2D
 
 def main():
     # This code is modified based on this [repository](https://github.com/TaoRuijie/TalkNet-ASD).
@@ -15,7 +16,7 @@ def main():
     parser.add_argument('--lrDecay',      type=float, default=0.95,  help='Learning rate decay rate')
     parser.add_argument('--maxEpoch',     type=int,   default=30,    help='Maximum number of epochs')
     parser.add_argument('--testInterval', type=int,   default=1,     help='Test and save every [testInterval] epochs')
-    parser.add_argument('--batchSize',    type=int,   default=2000,  help='Dynamic batch size, default is 2000 frames')
+    parser.add_argument('--batchSize',    type=int,   default=1000,  help='Dynamic batch size, default is 2000 frames')
     parser.add_argument('--nDataLoaderThread', type=int, default=32,  help='Number of loader threads')
     # Data path
     parser.add_argument('--dataPathAVA',  type=str, default="AVADataPath", help='Save path of AVA dataset')

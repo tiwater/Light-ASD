@@ -29,43 +29,38 @@ class ASD(nn.Module):
         r = 1.3 - 0.02 * (epoch - 1)
 
         for num, (audioFeature, visualFeature, labels) in enumerate(loader, start=1):
-            with autocast():
-                audioEmbed = self.model.forward_audio_frontend(audioFeature[0].to(self.device))
-                visualEmbed = self.model.forward_visual_frontend(visualFeature[0].to(self.device))
-                outsAV = self.model.forward_audio_visual_backend(audioEmbed, visualEmbed)
-                outsV = self.model.forward_visual_backend(visualEmbed)
-                
-                labels = labels[0].reshape((-1)).to(self.device)
-                nlossAV, _, _, prec = self.lossAV.forward(outsAV, labels, r)
-                nlossV = self.lossV.forward(outsV, labels, r)
-                nloss = nlossAV + 0.5 * nlossV
+            self.zero_grad()
 
-            # Use the scaler to scale the loss before calling backward
-            self.scaler.scale(nloss).backward()
-            self.scaler.step(self.optim)
-            self.scaler.update()
+            audioEmbed = self.model.forward_audio_frontend(audioFeature[0].to(self.device))
+            visualEmbed = self.model.forward_visual_frontend(visualFeature[0].to(self.device))
 
-            self.optim.zero_grad()  # This was incorrectly self.optim.step() in explanation
+            outsAV= self.model.forward_audio_visual_backend(audioEmbed, visualEmbed)  
+            outsV = self.model.forward_visual_backend(visualEmbed)
 
-            # Update loss statistics
+            labels = labels[0].reshape((-1)).to(self.device)   # Loss
+            nlossAV, _, _, prec = self.lossAV.forward(outsAV, labels, r)
+            nlossV = self.lossV.forward(outsV, labels, r)
+            nloss = nlossAV + 0.5 * nlossV
+
             lossV += nlossV.detach().cpu().numpy()
             lossAV += nlossAV.detach().cpu().numpy()
             loss += nloss.detach().cpu().numpy()
             top1 += prec
+            nloss.backward()
+            self.optim.step()
             index += len(labels)
-            
             sys.stderr.write(time.strftime("%m-%d %H:%M:%S") + \
             " [%2d] r: %2f, Lr: %5f, Training: %.2f%%, "    %(epoch, r, lr, 100 * (num / loader.__len__())) + \
             " LossV: %.5f, LossAV: %.5f, Loss: %.5f, ACC: %2.2f%% \r"  %(lossV/(num), lossAV/(num), loss/(num), 100 * (top1/index)))
-            sys.stderr.flush() 
+            sys.stderr.flush()  
+
+        sys.stdout.write("\n")   
 
         # After completing an epoch, release cached memory
-        torch.cuda.empty_cache()
-
-        sys.stdout.write("\n")      
+        torch.cuda.empty_cache()   
 
         return loss/num, lr
-  
+
     def evaluate_network(self, loader, evalCsvSave, evalOrig, **kwargs):
     
         self.eval()
