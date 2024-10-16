@@ -89,7 +89,7 @@ This repository contains the code and model weights for our [paper](https://open
     ```bash
     python evaluate_perf.py
     ```
-    评估 LightASD 模型的计算性能。
+    评估 LightASD 模型的计算性能。执行这一步时，需要用 USB 和开发板的 otg 端口相连。或者利用 adb connect <ip> 通过网络方式连接开发板。
 
 4. 执行：
     ```bash
