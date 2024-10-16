@@ -14,18 +14,20 @@ This repository contains the code and model weights for our [paper](https://open
    - RKNN-Toolkit Ubuntu 20.04 只支持 Python 3.8 和 3.9。
    - Ubuntu 22.04 支持 Python 3.10 和 3.11。
 
-2. 在开发板上执行以下命令以安装必要的库：
+2. 将本项目拷贝至 RK3588 开发板，将 `models/rknn_models.zip` 解压至 `models` 目录。
+ 
+3. 在开发板上执行以下命令以安装必要的库：
    ```bash
-   sudo apt-get install libxslt1-dev zlib1g zlib1g-dev libglib2.0-0 libsm6 libgl1-mesa-glx libprotobuf-dev gcc
-   pip install -i https://mirror.baidu.com/pypi/simple opencv_contrib_python
+   sudo apt-get install libxslt1-dev zlib1g zlib1g-dev libglib2.0-0 libsm6 libgl1-mesa-glx libprotobuf-dev gcc ffmpeg
+   pip install -r requirements.txt
    ```
 
-3. 获得瑞芯微官方的 RKNN-Toolkit：
+4. 获得瑞芯微官方的 RKNN-Toolkit：
    ```bash
    git clone https://hub.nuaa.cf/airockchip/rknn-toolkit2.git
    ```
 
-4. 将 RKNN-Toolkit 安装到开发板上：
+9. 将 RKNN-Toolkit 安装到开发板上：
    ```bash
    cd rknn-toolkit2
    pip install rknn-toolkit-lite2/packages/rknn_toolkit_lite2-2.0.0b0-cpxx-cpxx-linux_aarch64.whl
@@ -34,8 +36,6 @@ This repository contains the code and model weights for our [paper](https://open
    ```bash
    pip install rknn-toolkit-lite2/packages/rknn_toolkit_lite2-2.0.0b0-cp38-cp38-linux_aarch64.whl
    ```
-
-5. 将本项目拷贝至 RK3588 开发板。
 
 6. 执行：
    ```bash
@@ -47,8 +47,7 @@ This repository contains the code and model weights for our [paper](https://open
    ```bash
    python inference_rknn.py
    ```
-
-   如果希望采用量化模型，请选择 lightASD_i8.rknn
+   利用 RKNN 模型推理
 
 ## 模型转换
 
@@ -64,11 +63,7 @@ This repository contains the code and model weights for our [paper](https://open
     ```bash
     python gen_asd_rknn.py
     ```
-    会依次生成 LightASD 的 pt, onnx, rknn 模型。但默认的 Encoder 实现对 rknn 模型支持不佳，因此目前默认并不生成。
-    
-    如果确实需要生成 rknn 模型，请参考 `model/Model.py` 开始的注释，选择使用 Encoder2D.py 中的实现。并取消注释 gen_asd_rknn.py 中最后一行 rknn 模型生成部分，不然很容易内存溢出崩溃。
-
-    但 Encoder2D.py 目前仅供参考，因为改写了模型，权重尚未重新生成，重新训练之前暂时不具有实用价值。
+    会依次生成 LightASD 的 pt, onnx, rknn 模型。
 
 6.  执行：
     ```bash
@@ -107,7 +102,7 @@ This repository contains the code and model weights for our [paper](https://open
     python gen_quantize_data.py
     python quantize.py
     ```
-    生成量化数据并执行量化。注意，应根据模型的输入尺寸选择合适的量化数据。量化数据的类型也应该和模型的输入类型一致。此功能目前尚未完善。
+    生成量化数据并执行量化。注意，量化数据是从 Columbia_test.py 解析出的文件中提取而来，注意阅读 gen_quantize_data.py 开始的注释。
 
 ***
 ### Evaluate on AVA-ActiveSpeaker dataset 

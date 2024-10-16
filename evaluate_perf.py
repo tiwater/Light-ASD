@@ -1,8 +1,5 @@
-import torch
 from rknn.api import RKNN
 import sys
-
-# Need pytorch 2.4.0
 
 # Execute 
 # sudo adbd &

@@ -15,8 +15,8 @@ def main():
     parser.add_argument('--lrDecay',      type=float, default=0.95,  help='Learning rate decay rate')
     parser.add_argument('--maxEpoch',     type=int,   default=30,    help='Maximum number of epochs')
     parser.add_argument('--testInterval', type=int,   default=1,     help='Test and save every [testInterval] epochs')
-    parser.add_argument('--batchSize',    type=int,   default=2000,  help='Dynamic batch size, default is 2000 frames')
-    parser.add_argument('--nDataLoaderThread', type=int, default=16,  help='Number of loader threads')
+    parser.add_argument('--batchSize',    type=int,   default=1000,  help='Dynamic batch size, default is 2000 frames')
+    parser.add_argument('--nDataLoaderThread', type=int, default=32,  help='Number of loader threads')
     # Data path
     parser.add_argument('--dataPathAVA',  type=str, default="AVADataPath", help='Save path of AVA dataset')
     parser.add_argument('--savePath',     type=str, default="exps/exp1")
@@ -43,7 +43,7 @@ def main():
                         audioPath     = os.path.join(args.audioPathAVA , args.evalDataType), \
                         visualPath    = os.path.join(args.visualPathAVA, args.evalDataType), \
                         **vars(args))
-    valLoader = torch.utils.data.DataLoader(loader, batch_size = 1, shuffle = False, num_workers = 16, pin_memory = True)
+    valLoader = torch.utils.data.DataLoader(loader, batch_size = 1, shuffle = False, num_workers = 32, pin_memory = True)
 
     if args.evaluation == True:
         s = ASD(**vars(args))

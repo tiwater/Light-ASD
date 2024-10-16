@@ -58,7 +58,7 @@ def evaluate_network(files):
 
           # Calculate and print the running time
           running_time = end_time - start_time
-          print(f"Asd inference running time: {running_time:.4f} seconds")
+          # print(f"Asd inference running time: {running_time:.4f} seconds")
 
                     
           # print(out)
@@ -77,12 +77,18 @@ def evaluate_network(files):
 
           # Calculate and print the running time
           running_time = end_time - start_time
-          print(f"LossAV inference running time: {running_time:.4f} seconds")
+          # print(f"LossAV inference running time: {running_time:.4f} seconds")
 
           # print(score)
-          scores.extend(score)
+          # Convert score to NumPy array before flattening
+          score_array = np.array(score)
+          scores.extend(score_array.flatten())  # Flatten only if it's a NumPy array
       allScore.append(scores)
-    allScore = numpy.round((numpy.mean(numpy.array(allScore), axis = 0)), 1).astype(float)
+
+    # Flatten and convert all scores to a consistent 2-D structure
+    allScore = numpy.vstack(allScore)  # Stack to make a consistent 2D array
+    allScore = numpy.round((numpy.mean(allScore, axis=0)), 1).astype(float)  # Compute mean
+    
     allScores.append(allScore)	
   return allScores
 
@@ -90,4 +96,4 @@ def evaluate_network(files):
 files = glob.glob("%s/*.avi"%pycropPath)
 files.sort()
 scores=evaluate_network(files)
-# print(scores)
+print(scores)

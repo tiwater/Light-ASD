@@ -11,7 +11,7 @@ pycropPath = "demo/test/pycrop"
 def evaluate_network(files):
 # Initialize RKNN model
   lightAsd = RKNNLite()
-  lightAsd.load_rknn('./models/lightASD.rknn')
+  lightAsd.load_rknn('./models/lightASD_i8.rknn')
   lightAsd.init_runtime(core_mask=RKNNLite.NPU_CORE_ALL)
 
   lossAV = RKNNLite()
@@ -49,7 +49,11 @@ def evaluate_network(files):
         for i in range(batchSize):
           inputA = torch.FloatTensor(audioFeature[i * duration * 100:(i+1) * duration * 100,:]).unsqueeze(0).numpy()
           inputV = torch.FloatTensor(videoFeature[i * duration * 25: (i+1) * duration * 25,:,:]).unsqueeze(0).numpy()
-          
+
+          # Note: RKNN can only accept the specified shape, for audio it's 100, 200, 300, 400, 500, 600. 
+          # Either use sliding window to make sure it meets the requirement, or here for test we just ignore the data.
+          if inputA.shape[1]%100!=0:
+              continue
           # Transpose visual input to match NHWC format
           inputV = inputV.transpose(0, 2, 3, 1)  # from NCHW to NHWC
           
@@ -62,7 +66,7 @@ def evaluate_network(files):
 
           # Calculate and print the running time
           running_time = end_time - start_time
-          print(f"Asd inference running time: {running_time:.4f} seconds")
+          # print(f"Asd inference running time: {running_time:.4f} seconds")
           
           # print(out)
           # print(out.shape)
@@ -77,19 +81,34 @@ def evaluate_network(files):
 
           # Calculate and print the running time
           running_time = end_time - start_time
-          print(f"LossAV inference running time: {running_time:.4f} seconds")
+          # print(f"LossAV inference running time: {running_time:.4f} seconds")
 
           # print(score)
-          scores.extend(score)
+          score_array = np.array(score)
+          scores.extend(score_array.flatten())  # Flatten only if it's a NumPy array
       allScore.append(scores)
-    allScore = numpy.round((numpy.mean(numpy.array(allScore), axis = 0)), 1).astype(float)
-    allScores.append(allScore)	
 
-    lightAsd.release()
+    # Determine the maximum score length
+    max_length = max(len(score) for score in allScore)
+
+    # Note: Because we ignored some datat on the edge, may cause the array length to be inconsistent
+    # Pad all scores to the maximum length. But be careful if you want to get the real score, because the score is padded with 0 which will impact the result
+    allScore_padded = [np.pad(score, (0, max_length - len(score)), 'constant') for score in allScore]
+    
+    # Stack the padded scores
+    allScore_padded = np.vstack(allScore_padded)
+
+    # Compute the mean
+    allScore = np.round((np.mean(allScore_padded, axis=0)), 1).astype(float)
+
+    allScores.append(allScore)
+
+  lossAV.release()
+  lightAsd.release()
   return allScores
 
 # Active Speaker Detection
 files = glob.glob("%s/*.avi"%pycropPath)
 files.sort()
 scores=evaluate_network(files)
-# print(scores)
+print(scores)

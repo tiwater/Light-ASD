@@ -128,12 +128,13 @@ class Visual_Block(nn.Module):
         # Element-wise addition of outputs from both paths
         x = x_3 + x_5
 
+        x = x.permute(0, 2, 1, 3, 4).contiguous()  # Change to [N, T, C, H, W] for final spatial operation
+        x = x.view(n * t, out_c, new_h, new_w)  # Reshape to [N*T, C, H, W]
+
         # Final 1x1 conv layer
-        x = x.permute(0, 2, 1, 3, 4)  # Change to [N, T, C, H, W] for final spatial operation
-        x = x.reshape(n * t, out_c, new_h, new_w)  # Reshape to [N*T, C, H, W]
         x = self.relu(self.bn_last(self.last(x)))  # Apply last 2D conv
         x = x.view(n, t, out_c, new_h, new_w).permute(0, 2, 1, 3, 4)  # Return back to [N, C, T, H, W]
-
+        
         return x
     
 class visual_encoder(nn.Module):

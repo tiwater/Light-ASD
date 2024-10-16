@@ -1,5 +1,5 @@
 import torch
-from ASD import ASD
+from ASD_2D import ASD
 from rknn.api import RKNN
 
 # Need pytorch 2.4.0

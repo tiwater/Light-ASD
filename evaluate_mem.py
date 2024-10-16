@@ -1,4 +1,3 @@
-import torch
 from rknn.api import RKNN
 
 # Execute 
