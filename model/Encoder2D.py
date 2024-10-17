@@ -91,6 +91,10 @@ class Visual_Block(nn.Module):
         self.t_5 = nn.Conv1d(out_channels, out_channels, kernel_size=5, padding=2, bias=False)
         self.bn_t_5 = nn.BatchNorm1d(out_channels, momentum=0.01, eps=0.001)
 
+        # 1x1 convolution as a learnable transformation layer
+        self.conv1x1_transform = nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0, bias=False)
+        self.bn_transform = nn.BatchNorm2d(out_channels, momentum=0.01, eps=0.001)
+
         # Final adjustment layer
         self.last = nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0, bias=False)
         self.bn_last = nn.BatchNorm2d(out_channels, momentum=0.01, eps=0.001)
@@ -124,13 +128,18 @@ class Visual_Block(nn.Module):
         x_5 = self.relu(self.bn_t_5(self.t_5(x_5)))  # Apply 1D conv across temporal
 
         x_5 = x_5.view(n, out_c, new_h, new_w, t).permute(0, 1, 4, 2, 3)  # Return back to [N, C, T, H, W]
-
+        
         # Element-wise addition of outputs from both paths
-        x = x_3 + x_5
+        x = x_3 + x_5 # 此行对应 ConvReluAdd
 
-        x = x.permute(0, 2, 1, 3, 4).contiguous()  # Change to [N, T, C, H, W] for final spatial operation
-        x = x.view(n * t, out_c, new_h, new_w)  # Reshape to [N*T, C, H, W]
+        # 下面两行对应 Reshape 和 Transpose
+        # x = x.permute(0, 2, 1, 3, 4).contiguous()  # Change to [N, T, C, H, W] for final spatial operation
+        # x = x.view(n * t, out_c, new_h, new_w)  # Reshape to [N*T, C, H, W]
+        
+        # 1x1 convolution to replace the transpose operation
+        x = self.relu(self.bn_transform(self.conv1x1_transform(x.reshape(n*t, out_c, new_h, new_w))))
 
+        # 下面对应 ConvRelu
         # Final 1x1 conv layer
         x = self.relu(self.bn_last(self.last(x)))  # Apply last 2D conv
         x = x.view(n, t, out_c, new_h, new_w).permute(0, 2, 1, 3, 4)  # Return back to [N, C, T, H, W]
@@ -151,6 +160,8 @@ class visual_encoder(nn.Module):
 
         self.maxpool = nn.AdaptiveMaxPool2d((1, 1))
 
+        self.dropout = nn.Dropout(p=0.5)
+
         self.__init_weight()     
 
     def forward(self, x):
@@ -170,6 +181,8 @@ class visual_encoder(nn.Module):
 
         x = self.maxpool(x)
 
+        x = self.dropout(x)
+
         x = x.view(B, T, C)  
         
         return x
@@ -177,9 +190,9 @@ class visual_encoder(nn.Module):
     def __init_weight(self):
 
         for m in self.modules():
-            if isinstance(m, nn.Conv3d):
+            if isinstance(m, nn.Conv2d):
                 torch.nn.init.kaiming_normal_(m.weight)
-            elif isinstance(m, nn.BatchNorm3d):
+            elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
