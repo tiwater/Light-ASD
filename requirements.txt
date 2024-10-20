@@ -1,4 +1,4 @@
-torch==2.1.0
+torch==2.2.0
 numpy==1.26.4
 # May need to execute commands below to install opencv:
 # sudo apt-get update
