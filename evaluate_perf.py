@@ -31,7 +31,7 @@ def evaluate_rknn_model(rknn_path):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         # Define the base path for models
-        base_model_path = "./models/lightASD"
+        base_model_path = "./models/lightASD_i8"
 
         rknn_model_path = f"{base_model_path}.rknn"
     else:

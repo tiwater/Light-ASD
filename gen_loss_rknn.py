@@ -95,7 +95,7 @@ def generate_rknn_model(onnx_path, rknn_path):
 
 if __name__ == "__main__":
     # Paths
-    asd_model_path = "weight/rknn_v21.model"
+    asd_model_path = "weight/rknn_v22.model"
 
     # Define the base path for models
     base_model_path = "./models/lossAV"
