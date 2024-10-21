@@ -1,99 +1,92 @@
-import os, tqdm, torch, glob, cv2, numpy, math, python_speech_features
-import onnxruntime as ort
-import numpy as np
 import os
+import numpy as np
+import glob
+import cv2
 from scipy.io import wavfile
+import python_speech_features
+import tqdm
+import onnxruntime as ort
 import time
 
 pycropPath = "demo/test/pycrop"
 
 def evaluate_network(files):
-  providers = ['CPUExecutionProvider']
-  model = ort.InferenceSession('./models/lightASD.onnx', providers=providers)
+    providers = ['CPUExecutionProvider']
+    model = ort.InferenceSession('./models/lightASD.onnx', providers=providers)
+    lossAV = ort.InferenceSession('./models/lossAV.onnx', providers=providers)
 
-  lossAV = ort.InferenceSession('./models/lossAV.onnx', providers=providers)
-  allScores = []
-  # durationSet = {1,2,4,6} # To make the result more reliable
-  durationSet = {1,1,1,2,2,2,3,3,4,5,6} # Use this line can get more reliable result
-  for file in tqdm.tqdm(files, total = len(files)):
-    fileName = os.path.splitext(file.split('/')[-1])[0] # Load audio and video
-    _, audio = wavfile.read(os.path.join(pycropPath, fileName + '.wav'))
-    audioFeature = python_speech_features.mfcc(audio, 16000, numcep = 13, winlen = 0.025, winstep = 0.010)
-    video = cv2.VideoCapture(os.path.join(pycropPath, fileName + '.avi'))
-    videoFeature = []
-    while video.isOpened():
-      ret, frames = video.read()
-      if ret == True:
-        face = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-        face = cv2.resize(face, (224,224))
-        face = face[int(112-(112/2)):int(112+(112/2)), int(112-(112/2)):int(112+(112/2))]
-        videoFeature.append(face)
-      else:
-        break
-    video.release()
-    videoFeature = numpy.array(videoFeature)
-    length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
-    audioFeature = audioFeature[:int(round(length * 100)),:]
-    videoFeature = videoFeature[:int(round(length * 25)),:,:]
-    allScore = [] # Evaluation use model
-    for duration in durationSet:
-      batchSize = int(math.ceil(length / duration))
-      scores = []
-      with torch.no_grad():
-        for i in range(batchSize):
-          inputA = torch.FloatTensor(audioFeature[i * duration * 100:(i+1) * duration * 100,:]).unsqueeze(0).numpy()
-          inputV = torch.FloatTensor(videoFeature[i * duration * 25: (i+1) * duration * 25,:,:]).unsqueeze(0).numpy()
-          
-          ort_inputs = {
-              'audio': inputA.astype(np.float32),
-              'visual': inputV.astype(np.float32)
-          }
-          
-          # Measure the start time
-          start_time = time.time()
-          # Run inference
-          out = model.run(None, ort_inputs)[0]
-          # Measure the end time
-          end_time = time.time()
+    allScores = []
+    # Use this line can get more reliable result
+    durationSet = {1, 1, 1, 2, 2, 2, 3, 3, 4, 5, 6}
 
-          # Calculate and print the running time
-          running_time = end_time - start_time
-          # print(f"Asd inference running time: {running_time:.4f} seconds")
+    for file in tqdm.tqdm(files, total=len(files)):
+        fileName = os.path.splitext(os.path.basename(file))[0] 
 
-                    
-          # print(out)
-          # print(out.shape)
-          
+        # Load audio and video
+        _, audio = wavfile.read(os.path.join(pycropPath, fileName + '.wav'))
+        audioFeature = python_speech_features.mfcc(audio, 16000, numcep=13, winlen=0.025, winstep=0.010)
 
-          ort_inputs = {lossAV.get_inputs()[0].name: out}
+        video = cv2.VideoCapture(os.path.join(pycropPath, fileName + '.avi'))
+        videoFeature = []
 
-          # Measure the start time
-          start_time = time.time()
+        while video.isOpened():
+            ret, frames = video.read()
+            if not ret:
+                break
+            face = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+            face = cv2.resize(face, (224, 224))
+            face = face[56:168, 56:168]  # Crop centrally without additional calculations
+            videoFeature.append(face)
 
-          score = lossAV.run(None, ort_inputs)
+        video.release()
+        videoFeature = np.array(videoFeature)
 
-          # Measure the end time
-          end_time = time.time()
+        length = min((audioFeature.shape[0] - audioFeature.shape[0] % 4) / 100, videoFeature.shape[0])
+        audioFeature = audioFeature[:int(round(length * 100))]
+        videoFeature = videoFeature[:int(round(length * 25))]
 
-          # Calculate and print the running time
-          running_time = end_time - start_time
-          # print(f"LossAV inference running time: {running_time:.4f} seconds")
+        allScore = []  # Evaluation use model
+        for duration in durationSet:
+            batchSize = int(np.ceil(length / duration))
+            scores = []
+            
+            for i in range(batchSize):
+                inputA = audioFeature[i * duration * 100:(i+1) * duration * 100, :].astype(np.float32)[np.newaxis]
+                inputV = videoFeature[i * duration * 25:(i+1) * duration * 25, :, :].astype(np.float32)[np.newaxis]
 
-          # print(score)
-          # Convert score to NumPy array before flattening
-          score_array = np.array(score)
-          scores.extend(score_array.flatten())  # Flatten only if it's a NumPy array
-      allScore.append(scores)
+                ort_inputs_model = {
+                    'audio': inputA,
+                    'visual': inputV
+                }
 
-    # Flatten and convert all scores to a consistent 2-D structure
-    allScore = numpy.vstack(allScore)  # Stack to make a consistent 2D array
-    allScore = numpy.round((numpy.mean(allScore, axis=0)), 1).astype(float)  # Compute mean
-    
-    allScores.append(allScore)	
-  return allScores
+                start_time = time.time()
+                out = model.run(None, ort_inputs_model)[0]
+                end_time = time.time()
+
+                # print(f"Asd inference running time: {end_time - start_time:.4f} seconds")
+                # print(out)
+
+                ort_inputs_lossAV = {lossAV.get_inputs()[0].name: out}
+
+                start_time = time.time()
+                score = lossAV.run(None, ort_inputs_lossAV)
+                end_time = time.time()
+
+                # print(f"LossAV inference running time: {end_time - start_time:.4f} seconds")
+                # print(score)
+
+                scores.extend(np.array(score).flatten())  # Convert to numpy array before flattening
+            
+            allScore.append(scores)
+
+        allScore = np.vstack(allScore)  # Stack to make a consistent 2D array
+        allScore = np.round(np.mean(allScore, axis=0), 1).astype(float)
+
+        allScores.append(allScore)
+
+    return allScores
 
 # Active Speaker Detection
-files = glob.glob("%s/*.avi"%pycropPath)
-files.sort()
-scores=evaluate_network(files)
+files = sorted(glob.glob(f"{pycropPath}/*.avi"))
+scores = evaluate_network(files)
 print(scores)
