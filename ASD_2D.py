@@ -19,7 +19,6 @@ class ASD(nn.Module):
         self.lossV = lossV().to(self.device)
         self.optim = torch.optim.Adam(self.parameters(), lr = lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optim, step_size = 1, gamma=lrDecay)
-        # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, mode='min', factor=0.1, patience=5, verbose=True)
         print(time.strftime("%m-%d %H:%M:%S") + " Model para number = %.2f"%(sum(param.numel() for param in self.model.parameters()) / 1000 / 1000))
 
     def train_network(self, loader, epoch, **kwargs):
@@ -58,51 +57,6 @@ class ASD(nn.Module):
         sys.stdout.write("\n")      
 
         return loss/num, lr
-
-    # def evaluate_network(self, loader, evalCsvSave, evalOrig, **kwargs):
-    
-    #     self.eval()
-    #     predScores = []
-    #     total_loss = 0
-    #     for audioFeature, visualFeature, labels in tqdm.tqdm(loader):
-    #         with torch.no_grad():                
-    #             audioEmbed  = self.model.forward_audio_frontend(audioFeature[0].to(self.device))
-    #             visualEmbed = self.model.forward_visual_frontend(visualFeature[0].to(self.device))
-    #             outsAV= self.model.forward_audio_visual_backend(audioEmbed, visualEmbed)  
-    #             outsV = self.model.forward_visual_backend(visualEmbed)
-    #             labels = labels[0].reshape((-1)).to(self.device)                 
-    #             nlossAV, predScore, _, _ = self.lossAV.forward(outsAV, labels)    
-    #             nlossV = self.lossV.forward(outsV, labels, 1)
-    #             nloss = nlossAV + 0.5 * nlossV
-
-    #             total_loss += nloss.detach().cpu().numpy()
-    #             predScore = predScore[:,1].detach().cpu().numpy()
-    #             predScores.extend(predScore)
-    #             # break
-    #     evalLines = open(evalOrig).read().splitlines()[1:]
-    #     labels = []
-    #     labels = pandas.Series( ['SPEAKING_AUDIBLE' for line in evalLines])
-    #     scores = pandas.Series(predScores)
-    #     evalRes = pandas.read_csv(evalOrig)
-    #     evalRes['score'] = scores
-    #     evalRes['label'] = labels
-    #     evalRes.drop(['label_id'], axis=1,inplace=True)
-    #     evalRes.drop(['instance_id'], axis=1,inplace=True)
-    #     evalRes.to_csv(evalCsvSave, index=False)
-    #     cmd = "python3 -O utils/get_ava_active_speaker_performance.py -g %s -p %s "%(evalOrig, evalCsvSave)
-    #     mAP = float(str(subprocess.run(cmd, shell=True, stdout=PIPE, stderr=PIPE).stdout).split(' ')[2][:5])
-
-    #     val_loss = total_loss / len(loader)
-    #     self.scheduler.step(val_loss)
-
-    #     sys.stderr.write(time.strftime("%m-%d %H:%M:%S") + \
-    #     " val_loss: %.5f \r"  %(val_loss))
-    #     sys.stderr.flush()  
-
-    #     sys.stdout.write("\n")   
-
-    #     return mAP
-
 
     def evaluate_network(self, loader, evalCsvSave, evalOrig, **kwargs):
     

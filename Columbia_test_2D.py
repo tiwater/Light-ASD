@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(description = "Columbia ASD Evaluation")
 
 parser.add_argument('--videoName',             type=str, default="col",   help='Demo video name')
 parser.add_argument('--videoFolder',           type=str, default="colDataPath",  help='Path for inputs, tmps and outputs')
-parser.add_argument('--pretrainModel',         type=str, default="weight/rknn_v22.model",   help='Path for the pretrained model')
+parser.add_argument('--pretrainModel',         type=str, default="weight/sat_2d.model",   help='Path for the pretrained model')
 
 parser.add_argument('--nDataLoaderThread',     type=int,   default=10,   help='Number of workers')
 parser.add_argument('--facedetScale',          type=float, default=0.25, help='Scale factor for face detection, the frames will be scale to 0.25 orig')
