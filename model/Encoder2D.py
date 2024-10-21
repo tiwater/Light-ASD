@@ -95,8 +95,6 @@ class Visual_Block(nn.Module):
         self.last = nn.Conv2d(out_channels, out_channels, kernel_size=1, padding=0, bias=False)
         self.bn_last = nn.BatchNorm2d(out_channels, momentum=0.01, eps=0.001)    
 
-
-# A correct version?
     def forward(self, x):
         # Initial shape [N, C, T, H, W]
         n, c, t, h, w = x.size()
