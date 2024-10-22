@@ -49,6 +49,9 @@ This repository contains the code and model weights for our [paper](https://open
    ```
    利用 RKNN 模型推理
 
+7. 速度优化：
+执行 config_cpufreq.sh 调整开发板运行频率，提升推理速度。
+
 ## 模型转换
 
 1. 如果需要重新生成模型，请执行以下步骤：

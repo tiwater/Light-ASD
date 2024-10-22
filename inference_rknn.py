@@ -59,6 +59,8 @@ def evaluate_network(files):
                 inputA = audioFeature[i * duration * 100:(i+1) * duration * 100, :][np.newaxis].astype(np.float32)
                 inputV = videoFeature[i * duration * 25:(i+1) * duration * 25, :, :][np.newaxis].astype(np.float32)
 
+                # Note: RKNN 输入只能接收预定义的结构，音频 shape[1] 则只能为 100, 200, 300, 400, 500, 600。
+                # 本测试用例中为简单起见，直接抛弃了零散数据。实际生产中应通过补帧或滑动窗口保证输入结构。
                 if inputA.shape[1] % 100 != 0:
                     continue
 
@@ -82,6 +84,9 @@ def evaluate_network(files):
             allScore.append(scores)
 
         max_length = max(len(score) for score in allScore)
+
+        # Note: 因为前面抛弃了部分数据，导致此处数据结构可能不完整，用简略方式补齐。如果希望得到准确分值，应考虑严谨的均值计算方法。
+        # 如果数据结构规整，则无需做补齐处理，参见 inference_onnx.py 的计算均值方法。
         allScore_padded = [np.pad(score, (0, max_length - len(score)), 'constant') for score in allScore]
         allScore_padded = np.vstack(allScore_padded)
         allScore = np.round(np.mean(allScore_padded, axis=0), 1).astype(float)
